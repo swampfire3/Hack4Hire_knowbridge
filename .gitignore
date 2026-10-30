@@ -1,0 +1,14 @@
+.env
+backend/demo_documents/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+uploads/
+models/
+node_modules/
+dist/
+frontend/dist/
+frontend/node_modules/
+cappuccino-ui-example.png
