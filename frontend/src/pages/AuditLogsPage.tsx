@@ -89,6 +89,7 @@ export const AuditLogsPage: React.FC = () => {
                 <th className="px-6 py-4">Client Scope</th>
                 <th className="px-6 py-4">Query</th>
                 <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Feedback</th>
                 <th className="px-6 py-4">Retrieved Sources</th>
               </tr>
             </thead>
@@ -139,6 +140,21 @@ export const AuditLogsPage: React.FC = () => {
                         ></span>
                         <span className="capitalize">{log.status}</span>
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {log.feedback === 'thumbs_up' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#2D3A2D] text-[#B5C99F] border border-[#53684B]">
+                          <span className="material-symbols-outlined text-[12px]">thumb_up</span>
+                          <span>Helpful</span>
+                        </span>
+                      ) : log.feedback === 'thumbs_down' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#402A25] text-[#E8A394] border border-[#70473D]">
+                          <span className="material-symbols-outlined text-[12px]">thumb_down</span>
+                          <span>Issue</span>
+                        </span>
+                      ) : (
+                        <span className="text-[#8F7B68] text-xs font-medium">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-xs text-[#8F7B68]">
                       {log.retrievedSources && log.retrievedSources.length > 0 ? (

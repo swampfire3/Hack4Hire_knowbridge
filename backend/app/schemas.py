@@ -55,6 +55,7 @@ class AuditLogOut(BaseModel):
     query: str
     retrieved_sources: list[str]
     status: str
+    feedback: str | None = None
 
 
 class MeResponse(BaseModel):
@@ -84,6 +85,12 @@ class ChatResponse(BaseModel):
     answer: str
     citations: list[CitationOut] = []
     conflict_detected: bool = False
+    audit_log_id: str | None = None
+
+
+class FeedbackRequest(BaseModel):
+    audit_log_id: str
+    feedback: Literal["thumbs_up", "thumbs_down"]
 
 
 class DocumentOut(BaseModel):

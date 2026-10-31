@@ -11,6 +11,7 @@ export const ChatPage: React.FC = () => {
     selectSession,
     createNewChat,
     addChatMessage,
+    submitFeedback,
     clearChat,
     documents,
   } = useApp();
@@ -252,6 +253,41 @@ export const ChatPage: React.FC = () => {
                             </span>
                           </span>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Thumbs Up / Thumbs Down Feedback for Assistant Replies */}
+                    {msg.sender === 'assistant' && msg.auditLogId && (
+                      <div className="mt-3 pt-2.5 border-t border-[#3D3027] flex items-center justify-between gap-3 text-xs">
+                        <span className="text-[10px] text-[#8F7B68]">Was this answer accurate?</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => submitFeedback(msg.id, msg.auditLogId!, 'thumbs_up')}
+                            className={`p-1 px-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                              msg.feedback === 'thumbs_up'
+                                ? 'bg-[#2D3A2D] text-[#B5C99F] border border-[#53684B]'
+                                : 'text-[#8F7B68] hover:text-[#B5C99F] hover:bg-[#2A211B]'
+                            }`}
+                            title="Helpful & Accurate"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">thumb_up</span>
+                            <span className="text-[10px]">Helpful</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => submitFeedback(msg.id, msg.auditLogId!, 'thumbs_down')}
+                            className={`p-1 px-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                              msg.feedback === 'thumbs_down'
+                                ? 'bg-[#402A25] text-[#E8A394] border border-[#70473D]'
+                                : 'text-[#8F7B68] hover:text-[#E8A394] hover:bg-[#2A211B]'
+                            }`}
+                            title="Issue or Inaccurate"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">thumb_down</span>
+                            <span className="text-[10px]">Issue</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

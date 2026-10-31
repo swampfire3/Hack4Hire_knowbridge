@@ -51,6 +51,8 @@ export interface ChatMessage {
   hasConflict?: boolean;
   conflictDetails?: string;
   isRefusal?: boolean;
+  auditLogId?: string;
+  feedback?: 'thumbs_up' | 'thumbs_down';
 }
 
 export interface ChatSession {
@@ -71,6 +73,7 @@ export interface AuditLogItem {
   query: string;
   retrievedSources: string[];
   status: 'allowed' | 'blocked' | 'refused' | 'error';
+  feedback?: 'thumbs_up' | 'thumbs_down' | null;
   executionTimeMs?: number;
 }
 

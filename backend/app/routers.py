@@ -15,7 +15,7 @@ from app.core.config import settings
 from app.db import get_db
 from app.models import AuditLog, Client, Document, RevokedToken, User, UserClient
 from app.schemas import (AuditLogOut, ChatQuery, ChatResponse, CitationOut, ClientCreate, ClientOut,
-                         DocumentOut, LoginRequest, MeResponse, TokenResponse,
+                         DocumentOut, FeedbackRequest, LoginRequest, MeResponse, TokenResponse,
                          UserAssignmentsUpdate, UserCreate, UserOut)
 from app.security import bearer_scheme, create_access_token, get_current_user, hash_password, require_admin, unauthorized, verify_password
 from app.services.ingestion import chunk_text, extract_digital_text
@@ -218,6 +218,7 @@ def list_audit_logs(user: User = Depends(require_admin), db: Session = Depends(g
             query=log.question,
             retrieved_sources=formatted_sources,
             status=log.status,
+            feedback=log.feedback,
         ))
     return output
 
@@ -330,8 +331,19 @@ def chat_query(payload: ChatQuery, user: User = Depends(get_current_user), db: S
             response = ChatResponse(state="insufficient_evidence", answer="The retrieved documents do not provide enough evidence to answer this question.", citations=citations)
         else:
             response = ChatResponse(state="answered", answer=answer, citations=citations, conflict_detected=False)
-    _audit(db, user.id, client_id, payload.question, response.state, source_ids)
+    log_entry = _audit(db, user.id, client_id, payload.question, response.state, source_ids)
+    response.audit_log_id = log_entry.id
     return response
+
+
+@router.post("/chat/feedback", tags=["chat"])
+def submit_chat_feedback(payload: FeedbackRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    log = db.query(AuditLog).filter(AuditLog.id == payload.audit_log_id, AuditLog.user_id == user.id).first()
+    if not log:
+        raise HTTPException(404, "Audit log not found")
+    log.feedback = payload.feedback
+    db.commit()
+    return {"status": "ok", "feedback": log.feedback}
 
 
 def _document_name(db: Session, document_id: str) -> str:
@@ -339,6 +351,9 @@ def _document_name(db: Session, document_id: str) -> str:
     return document.name if document else "Authorized document"
 
 
-def _audit(db: Session, user_id: str, client_id: str, question: str, status: str, source_ids: list[dict]) -> None:
-    db.add(AuditLog(user_id=user_id, client_id=client_id, question=question, status=status, source_ids=json.dumps(source_ids)))
+def _audit(db: Session, user_id: str, client_id: str, question: str, status: str, source_ids: list[dict]) -> AuditLog:
+    entry = AuditLog(user_id=user_id, client_id=client_id, question=question, status=status, source_ids=json.dumps(source_ids))
+    db.add(entry)
     db.commit()
+    db.refresh(entry)
+    return entry

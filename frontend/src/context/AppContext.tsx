@@ -3,6 +3,7 @@ import { User, Client, DocumentItem, AuditLogItem, ChatMessage, Citation, ChatSe
 import { API_BASE_URL } from '../config';
 import {
   askQuestion,
+  sendFeedback,
   createClient as createClientRequest,
   createUser as createUserRequest,
   getDocuments,
@@ -34,6 +35,7 @@ interface AppContextType {
   selectSession: (sessionId: string) => void;
   createNewChat: () => void;
   addChatMessage: (text: string) => Promise<void>;
+  submitFeedback: (messageId: string, auditLogId: string, feedback: 'thumbs_up' | 'thumbs_down') => Promise<void>;
   clearChat: () => void;
   refreshAuditLogs: () => Promise<void>;
   addDocument: (file: File, clientId: string, version: string) => Promise<{ success: boolean; message: string }>;
@@ -100,6 +102,7 @@ function mapApiAuditLog(log: ApiAuditLog): AuditLogItem {
         : log.status === 'error'
           ? 'error'
           : 'refused',
+    feedback: log.feedback || null,
   };
 }
 
@@ -286,7 +289,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         version: citation.version, location: [citation.page && `Page ${citation.page}`, citation.section].filter(Boolean).join(', ') || 'Location unavailable',
         excerpt: citation.excerpt || '', client: currentUser.assignedClientName }));
       const message: ChatMessage = { id: `msg-${Date.now()}`, sender: 'assistant', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: result.answer, citations, isRefusal: result.state === 'insufficient_evidence', hasConflict: result.conflict_detected };
+        text: result.answer, citations, isRefusal: result.state === 'insufficient_evidence', hasConflict: result.conflict_detected, auditLogId: result.audit_log_id };
       setChatHistory((history) => [...history, message]); setActiveCitations(citations);
       if (currentUser.role === 'admin') await refreshAuditLogs();
     } catch (error) {
@@ -294,6 +297,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setChatHistory((history) => [...history, { id: `msg-${Date.now()}`, sender: 'assistant', timestamp, text: `Unable to answer: ${message}`, isRefusal: true }]);
       setActiveCitations([]);
       if (currentUser.role === 'admin') await refreshAuditLogs();
+    }
+  };
+
+  const submitFeedback = async (messageId: string, auditLogId: string, feedback: 'thumbs_up' | 'thumbs_down') => {
+    try {
+      await sendFeedback(auditLogId, feedback);
+      setChatHistory((prev) =>
+        prev.map((msg) => (msg.id === messageId ? { ...msg, feedback } : msg))
+      );
+      if (currentUser?.role === 'admin') await refreshAuditLogs();
+    } catch (err) {
+      console.error('Failed to submit feedback', err);
     }
   };
 
@@ -315,6 +330,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectSession,
         createNewChat,
         addChatMessage,
+        submitFeedback,
          clearChat,
          refreshAuditLogs,
         addDocument,

@@ -24,10 +24,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export interface ApiIdentity { id: string; email: string; display_name: string; role: 'staff' | 'admin'; capabilities: string[]; clients: Array<{ id: string; name: string; tier: string }>; }
 export interface ApiCitation { id: string; document_name: string; version: string; page?: number; section?: string; excerpt?: string; }
-export interface ApiChatResponse { state: 'answered' | 'insufficient_evidence' | 'error'; answer: string; citations: ApiCitation[]; conflict_detected: boolean; }
+export interface ApiChatResponse { state: 'answered' | 'insufficient_evidence' | 'error'; answer: string; citations: ApiCitation[]; conflict_detected: boolean; audit_log_id?: string; }
 export interface ApiDocument { id: string; name: string; client_id: string; version: string; media_type: string; status: string; is_active: boolean; chunk_count: number; created_at?: string | null; }
 export interface ApiUser { id: string; email: string; display_name: string; role: 'staff' | 'admin'; active: boolean; clients: Array<{ id: string; name: string; tier: string }>; }
-export interface ApiAuditLog { id: string; timestamp: string; user: string; user_role: string; client_scope: string; query: string; retrieved_sources: string[]; status: string; }
+export interface ApiAuditLog { id: string; timestamp: string; user: string; user_role: string; client_scope: string; query: string; retrieved_sources: string[]; status: string; feedback?: 'thumbs_up' | 'thumbs_down' | null; }
 
 export async function login(email: string, password: string): Promise<ApiIdentity> {
   const token = await request<{ access_token: string }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
@@ -36,6 +36,11 @@ export async function login(email: string, password: string): Promise<ApiIdentit
 }
 export async function logout(): Promise<void> { try { if (accessToken) await request<void>('/auth/logout', { method: 'POST' }); } finally { accessToken = null; } }
 export const askQuestion = (question: string) => request<ApiChatResponse>('/chat/query', { method: 'POST', body: JSON.stringify({ question }) });
+export const sendFeedback = (auditLogId: string, feedback: 'thumbs_up' | 'thumbs_down') =>
+  request<{ status: string; feedback: string }>('/chat/feedback', {
+    method: 'POST',
+    body: JSON.stringify({ audit_log_id: auditLogId, feedback }),
+  });
 export const getDocuments = () => request<ApiDocument[]>('/documents');
 export const getUsers = () => request<ApiUser[]>('/users');
 export const getAuditLogs = () => request<ApiAuditLog[]>('/audit');
